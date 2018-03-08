@@ -50,6 +50,11 @@ This is an early version and API *and* the mappings might change before 1.0.
 
 * Copy-pasting examples is not as trivial, but this can be worked around by sharing patches/ed scripts instead.
 
+## Issue Tracking
+
+This project uses [SIT](http://sit-it.org) for managing and tracking issues independently from GitHub. You
+can find brief instructions on sending issue updates to this repository in its [README](https://github.com/sit-it/sit#questions-bug-reports-etc).
+
 ## License
 
 serde_fs is distributed under the terms of both the MIT license and the Apache License (Version 2.0).
