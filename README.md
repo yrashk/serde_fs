@@ -1,5 +1,11 @@
 # serde_fs
 
+<p>
+   <a href="https://travis-ci.org/yrashk/serde_fs"><img alt="Build status" src="https://travis-ci.org/yrashk/serde_fs.svg?branch=master"></a>
+   <a href="https://ci.appveyor.com/project/yrashk/serde_fs"><img alt="Windows Build status" src="https://ci.appveyor.com/api/projects/status/xyb2ilpchmum51tq?svg=true"></a>
+</p>
+
+
 Serializes/deserializes Rust data types to and from the filesystem.
 
 ## Motivation
