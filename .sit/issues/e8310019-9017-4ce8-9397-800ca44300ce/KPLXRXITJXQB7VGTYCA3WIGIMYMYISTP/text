@@ -1,0 +1,35 @@
+Given a structure like this:
+
+```rust
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(tag = "type")]
+enum StructVariantTag {
+    V1 {
+        test: u8,
+        passed: u64,
+    }
+}
+```
+
+When deserializing, it will fail with something like:
+
+```
+invalid type: string "2100", expected u64
+```
+
+(which is understandable given current implementation of `FilesystemDeserializer::deserialize_any`)
+
+However, there's currently a way to mitigate this by adding a `content` attribute set to `.`:
+
+```rust
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(tag = "type", content = ".")]
+enum StructVariantTag {
+    V1 {
+        test: u8,
+        passed: u64,
+    }
+}
+```
+
+This will work as intended.

@@ -706,6 +706,23 @@ mod tests {
     }
 
     #[derive(Serialize)]
+    #[serde(tag = "type", content = "content")]
+    enum VariantNewTypeTag {
+        C(u8),
+    }
+
+    #[test]
+    fn tuple_newtype_variant_tag() {
+        let tmp = TempDir::new("serde-fs").unwrap();
+        let serializer = FilesystemSerializer {
+            path: tmp.path().join("var"),
+        };
+        VariantNewTypeTag::C(100).serialize(serializer.clone()).unwrap();
+        assert_eq!(file_to_string(tmp.path().join("var").join("type")), "C");
+        assert_eq!(file_to_string(tmp.path().join("var").join("content")), "100");
+    }
+
+    #[derive(Serialize)]
     struct NewTypeStruct(u8);
 
     #[test]
@@ -973,5 +990,54 @@ mod tests {
         assert_eq!(file_to_string(tmp.path().join("struct").join("test")), "100");
         assert_eq!(file_to_string(tmp.path().join("struct").join("passed")), "2100");
     }
+
+    #[derive(Serialize)]
+    #[serde(tag = "type")]
+    enum StructVariantTag {
+        V1 {
+            test: u8,
+            passed: u64,
+        }
+    }
+
+    #[test]
+    fn struct_variant_tag() {
+        let tmp = TempDir::new("serde-fs").unwrap();
+        let serializer = FilesystemSerializer {
+            path: tmp.path().join("struct"),
+        };
+        StructVariantTag::V1 {
+            test: 100,
+            passed: 2100,
+        }.serialize(serializer.clone()).unwrap();
+        assert_eq!(file_to_string(tmp.path().join("struct").join("type")), "V1");
+        assert_eq!(file_to_string(tmp.path().join("struct").join("test")), "100");
+        assert_eq!(file_to_string(tmp.path().join("struct").join("passed")), "2100");
+    }
+
+    #[derive(Serialize)]
+    #[serde(tag = "type", content = "content")]
+    enum StructVariantTagContent {
+        V1 {
+            test: u8,
+            passed: u64,
+        }
+    }
+
+    #[test]
+    fn struct_variant_tag_content() {
+        let tmp = TempDir::new("serde-fs").unwrap();
+        let serializer = FilesystemSerializer {
+            path: tmp.path().join("struct"),
+        };
+        StructVariantTagContent::V1 {
+            test: 100,
+            passed: 2100,
+        }.serialize(serializer.clone()).unwrap();
+        assert_eq!(file_to_string(tmp.path().join("struct").join("type")), "V1");
+        assert_eq!(file_to_string(tmp.path().join("struct").join("content").join("test")), "100");
+        assert_eq!(file_to_string(tmp.path().join("struct").join("content").join("passed")), "2100");
+    }
+
 
 }
