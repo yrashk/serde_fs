@@ -61,9 +61,15 @@ fn bytes_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<u8>, io::Error> {
 impl<'de, P: AsRef<Path>> Deserializer<'de> for FilesystemDeserializer<P> {
     type Error = Error;
 
-    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error> where
         V: Visitor<'de> {
-        Err(Error::Unsupported)
+        if self.path.as_ref().is_dir() {
+            self.deserialize_map(visitor)
+        } else if self.path.as_ref().is_file() {
+            visitor.visit_str(&string_from_file(self.path)?)
+        } else {
+            Err(Error::FileNotFound)
+        }
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error> where
@@ -230,14 +236,14 @@ impl<'de, P: AsRef<Path>> Deserializer<'de> for FilesystemDeserializer<P> {
         Err(Error::InvalidEnum(variant))
     }
 
-    fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where
+    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error> where
         V: Visitor<'de> {
-        Err(Error::Unsupported)
+        visitor.visit_str(&string_from_file(self.path)?)
     }
 
-    fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error> where
         V: Visitor<'de> {
-        Err(Error::Unsupported)
+        visitor.visit_unit()
     }
 }
 
@@ -657,6 +663,23 @@ mod tests {
         assert_eq!(VariantNewType::deserialize(deserializer.clone()).unwrap(), VariantNewType::C(100));
     }
 
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    #[serde(tag = "type", content = "content")]
+    enum VariantNewTypeTag {
+        C(u8),
+    }
+
+    #[test]
+    fn tuple_newtype_variant_tag() {
+        let tmp = TempDir::new("serde-fs").unwrap();
+        let serializer = FilesystemSerializer::new(tmp.path().join("var"));
+         let deserializer = FilesystemDeserializer {
+            path: tmp.path().join("var"),
+        };
+        VariantNewTypeTag::C(100).serialize(serializer.clone()).unwrap();
+        assert_eq!(VariantNewTypeTag::deserialize(deserializer.clone()).unwrap(), VariantNewTypeTag::C(100));
+    }
+
     #[test]
     fn seq() {
         let tmp = TempDir::new("serde-fs").unwrap();
@@ -840,5 +863,83 @@ mod tests {
         assert_eq!(StructVariant::deserialize(deserializer.clone()).unwrap(), s);
     }
 
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    #[serde(tag = "type", content = ".")]
+    enum StructVariantTagInternal {
+        V1 {
+            test: u8,
+            passed: u64,
+        }
+    }
+
+    #[test]
+    fn struct_variant_tag_internal() {
+        let tmp = TempDir::new("serde-fs").unwrap();
+        let serializer = FilesystemSerializer::new(tmp.path().join("struct"));
+        let deserializer = FilesystemDeserializer {
+            path: tmp.path().join("struct"),
+        };
+        let s = StructVariantTagInternal::V1 {
+            test: 100,
+            passed: 2100,
+        };
+        s.serialize(serializer.clone()).unwrap();
+        assert_eq!(StructVariantTagInternal::deserialize(deserializer.clone()).unwrap(), s);
+    }
+
+    // The test below is currently expected to fail as there
+    // is no known solution to the issue. The test above (with content set to ".")
+    // replicates the intended behaviour of this one and works. This one doesn't
+    // See issue e8310019-9017-4ce8-9397-800ca44300ce
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    #[serde(tag = "type")]
+    enum StructVariantTag {
+        V1 {
+            test: u8,
+            passed: u64,
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid type")]
+    fn struct_variant_tag() {
+        let tmp = TempDir::new("serde-fs").unwrap();
+        let serializer = FilesystemSerializer::new(tmp.path().join("struct"));
+        let deserializer = FilesystemDeserializer {
+            path: tmp.path().join("struct"),
+        };
+        let s = StructVariantTag::V1 {
+            test: 100,
+            passed: 2100,
+        };
+        s.serialize(serializer.clone()).unwrap();
+        assert_eq!(StructVariantTag::deserialize(deserializer.clone()).unwrap(), s);
+    }
+
+
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    #[serde(tag = "type", content = "content")]
+    enum StructVariantTagContent {
+        V1 {
+            test: u8,
+            passed: u64,
+        }
+    }
+
+    #[test]
+    fn struct_variant_tag_content() {
+        let tmp = TempDir::new("serde-fs").unwrap();
+        let serializer = FilesystemSerializer::new(tmp.path().join("struct"));
+        let deserializer = FilesystemDeserializer {
+            path: tmp.path().join("struct"),
+        };
+        let s = StructVariantTagContent::V1 {
+            test: 100,
+            passed: 2100,
+        };
+        s.serialize(serializer.clone()).unwrap();
+        assert_eq!(StructVariantTagContent::deserialize(deserializer.clone()).unwrap(), s);
+    }
 
 }
