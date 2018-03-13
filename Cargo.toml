@@ -3,6 +3,9 @@ name = "serde_fs"
 version = "0.1.0"
 authors = ["Yurii Rashkovskii <yrashk@gmail.com>"]
 description = "[De]serializing data structures as files"
+license = "MIT/Apache-2.0"
+documentation = "https://docs.rs/serde_fs"
+repository = "https://github.com/yrashk/serde_fs"
 
 [dependencies]
 serde = "1.0"
