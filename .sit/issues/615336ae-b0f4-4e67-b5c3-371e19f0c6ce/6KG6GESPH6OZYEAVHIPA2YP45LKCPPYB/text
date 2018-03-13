@@ -1,0 +1,6 @@
+These tagging schemes are provided by Serde:
+https://serde.rs/enum-representations.html
+
+Solution: implement adjacent enum tagging and provide
+a workaround for internal tagging
+

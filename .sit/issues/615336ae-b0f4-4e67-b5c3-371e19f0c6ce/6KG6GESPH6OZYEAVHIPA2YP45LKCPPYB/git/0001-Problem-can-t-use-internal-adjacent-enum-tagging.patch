@@ -1,0 +1,405 @@
+From 5b63abf3dfabcc65df966fb1e3bac48db3c36c8a Mon Sep 17 00:00:00 2001
+From: Yurii Rashkovskii <yrashk@gmail.com>
+Date: Tue, 13 Mar 2018 15:25:57 +0700
+Subject: [PATCH] Problem: can't use internal & adjacent enum tagging
+
+These tagging schemes are provided by Serde:
+https://serde.rs/enum-representations.html
+
+Solution: implement adjacent enum tagging and provide
+a workaround for internal tagging
+---
+ .../ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.authors      |   1 +
+ .../ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.signature    |  17 ++++
+ .../ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.timestamp    |   1 +
+ .../.type/SummaryChanged                           |   0
+ .../ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/text          |   1 +
+ .../KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.authors      |   1 +
+ .../KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.signature    |  17 ++++
+ .../KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.timestamp    |   1 +
+ .../.type/DetailsChanged                           |   0
+ .../KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/text          |  35 +++++++
+ src/de.rs                                          | 113 +++++++++++++++++++--
+ src/ser.rs                                         |  66 ++++++++++++
+ 12 files changed, 247 insertions(+), 6 deletions(-)
+ create mode 100644 .sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.authors
+ create mode 100644 .sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.signature
+ create mode 100644 .sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.timestamp
+ create mode 100644 .sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.type/SummaryChanged
+ create mode 100644 .sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/text
+ create mode 100644 .sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.authors
+ create mode 100644 .sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.signature
+ create mode 100644 .sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.timestamp
+ create mode 100644 .sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.type/DetailsChanged
+ create mode 100644 .sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/text
+
+diff --git a/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.authors b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.authors
+new file mode 100644
+index 0000000..8022052
+--- /dev/null
++++ b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.authors
+@@ -0,0 +1 @@
++Yurii Rashkovskii <me@yrashk.com>
+\ No newline at end of file
+diff --git a/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.signature b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.signature
+new file mode 100644
+index 0000000..3ca3f25
+--- /dev/null
++++ b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.signature
+@@ -0,0 +1,17 @@
++-----BEGIN PGP SIGNATURE-----
++
++iQJCBAABCAAsFiEEjmkaFOaskcs7s6g8HWDXz9gIRf8FAlqnisUOHG1lQHlyYXNo
++ay5jb20ACgkQHWDXz9gIRf+/sQ//Q/o7ltR8ZhpLFeWXdl2hsyROIx25iSjwvMhu
++vZ//Fs+HIEpdW5tw76pQRwQU8MA866+Qlqk5IJDd56wdrfzRdxYQU4BPG6gwe/8+
++Oo9d/Y78ClSxOJR4IQMsatlqq0K06HNWYvTqRwiV58KCseCj/9YLCWkAZ/UGgmE0
++IJFeuWXD1pqu+u0RDpf1h/wPMejR0pfccRbuXstCUNRfNjBnW0fW62318X4l7yG8
++wLmxEmNbvA0UAsjaPsoDqUzuw+w+IoLpvWXfG16LcHoWB7oDBpxgeSZ0z4O480Sy
++1AYtND0ogYgBE4g/bQKfLw10WUB/v9acCBh2v2lZ6GNNhYNl8lzPVS/D7RNcWLBR
++VPTc7/qEVcc8FcZIQ0J0zKH1QEPLU4Issww/A610jCGHK7LZyIPDqBpPq1Q4wcXi
++jYJ3aCxp5yo3Xw5pwuEQD8d+E+cFS9BbiYSX8n6pPzYic3JW1uuJZLwl899QhUQp
++VmBROp3e0NHsY/0bzsnJWi9e08CIr451T8Ea5dfNE7rZcvj+oy9wV0ttxcb/LaT+
++l17HbVWpoWIukqo9b+Rplk0RPXld97iByZSsk1ML3ZPQHt2XhuOaG4EWWdpD2uhs
++1rxL/Cyaao3RIVQzwGATHhHN5e3Tqv5WaG/QvR1xcCSdr3Fj6tod+AwjFaSiD+K5
++j6OVXL4=
++=Saxz
++-----END PGP SIGNATURE-----
+diff --git a/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.timestamp b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.timestamp
+new file mode 100644
+index 0000000..d28ef61
+--- /dev/null
++++ b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.timestamp
+@@ -0,0 +1 @@
++2018-03-13T08:24:35.570Z
+\ No newline at end of file
+diff --git a/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.type/SummaryChanged b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/.type/SummaryChanged
+new file mode 100644
+index 0000000..e69de29
+diff --git a/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/text b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/text
+new file mode 100644
+index 0000000..3c7fec2
+--- /dev/null
++++ b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/ECJ3WM3RTY2FAONUDMKUJKPWBL26UAEQ/text
+@@ -0,0 +1 @@
++Problem: internally tagged enum deserialization doesn't work
+\ No newline at end of file
+diff --git a/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.authors b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.authors
+new file mode 100644
+index 0000000..8022052
+--- /dev/null
++++ b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.authors
+@@ -0,0 +1 @@
++Yurii Rashkovskii <me@yrashk.com>
+\ No newline at end of file
+diff --git a/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.signature b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.signature
+new file mode 100644
+index 0000000..1836320
+--- /dev/null
++++ b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.signature
+@@ -0,0 +1,17 @@
++-----BEGIN PGP SIGNATURE-----
++
++iQJCBAABCAAsFiEEjmkaFOaskcs7s6g8HWDXz9gIRf8FAlqnisUOHG1lQHlyYXNo
++ay5jb20ACgkQHWDXz9gIRf++tw/9FjxenC8Ahs36gM7muCDYLcHc2MFrnADLXszN
++1oOUKFKTDbtIOWG+AQNqbiTOlooQbxGWuUVEVi+e0gJ5qV9qjCqiLtXI8spFazyx
++svX8YokyDD1FJWeQ9srvRx4oJ4A9xWL9dzZgA4piIEQvFQoOSTWZdJJWiUiNNi9K
++qodQqhOD+EfjMMb4HQj0GXgVUhEs3wBQyIbNeVF+1Jq5MWKx+e6a3omuFO91lWCg
++eQ3e5QZeGBeAf+2AWJP0j6AJVxKDNP0koRaBTOQrcKAgbob+VWoi/lr3Dt9bfjq+
++PQIQdIH7erzfMj+3X4TIRdcJTQWvTjWhQhpKRHSqR8c3Kk8ojIBw+hUsVjzp2CJO
++cmmzarJ4az6tJ9N+rssD8KrQe5Tit5fnmsr+NFuR34FibYqMKZG8pi+wRvQs5xUr
++QpvB/G9xXVUVnD0bcjCyGaiuDuIup7G94eXRXhR7EvFRv50Xh76WviPZ+5i7QPoe
++mNihKP3PuGsoEr8+2Zu2nvH9e6BQ3F3C9uECrt2XpOcUIXkJVGTox11zQieew0q0
++H7+OUTv0YfACGTZnl8o4kuUK6waSumk0skwoGpBPbS4qAMSIKyoAeONYR5Be54r2
++Gd2dEWGTGPzZwbquXbNStXk6Wa9hllJw5lq5j36uzq8pGpwiZno5HkFw41V/5Mx2
++8gLu2uE=
++=Qx8V
++-----END PGP SIGNATURE-----
+diff --git a/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.timestamp b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.timestamp
+new file mode 100644
+index 0000000..d28ef61
+--- /dev/null
++++ b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.timestamp
+@@ -0,0 +1 @@
++2018-03-13T08:24:35.570Z
+\ No newline at end of file
+diff --git a/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.type/DetailsChanged b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/.type/DetailsChanged
+new file mode 100644
+index 0000000..e69de29
+diff --git a/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/text b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/text
+new file mode 100644
+index 0000000..4a8690f
+--- /dev/null
++++ b/.sit/issues/e8310019-9017-4ce8-9397-800ca44300ce/KPLXRXITJXQB7VGTYCA3WIGIMYMYISTP/text
+@@ -0,0 +1,35 @@
++Given a structure like this:
++
++```rust
++#[derive(Serialize, Deserialize, Debug, PartialEq)]
++#[serde(tag = "type")]
++enum StructVariantTag {
++    V1 {
++        test: u8,
++        passed: u64,
++    }
++}
++```
++
++When deserializing, it will fail with something like:
++
++```
++invalid type: string "2100", expected u64
++```
++
++(which is understandable given current implementation of `FilesystemDeserializer::deserialize_any`)
++
++However, there's currently a way to mitigate this by adding a `content` attribute set to `.`:
++
++```rust
++#[derive(Serialize, Deserialize, Debug, PartialEq)]
++#[serde(tag = "type", content = ".")]
++enum StructVariantTag {
++    V1 {
++        test: u8,
++        passed: u64,
++    }
++}
++```
++
++This will work as intended.
+\ No newline at end of file
+diff --git a/src/de.rs b/src/de.rs
+index df0a509..ed0933a 100644
+--- a/src/de.rs
++++ b/src/de.rs
+@@ -61,9 +61,15 @@ fn bytes_from_file<P: AsRef<Path>>(path: P) -> Result<Vec<u8>, io::Error> {
+ impl<'de, P: AsRef<Path>> Deserializer<'de> for FilesystemDeserializer<P> {
+     type Error = Error;
+ 
+-    fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where
++    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error> where
+         V: Visitor<'de> {
+-        Err(Error::Unsupported)
++        if self.path.as_ref().is_dir() {
++            self.deserialize_map(visitor)
++        } else if self.path.as_ref().is_file() {
++            visitor.visit_str(&string_from_file(self.path)?)
++        } else {
++            Err(Error::FileNotFound)
++        }
+     }
+ 
+     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error> where
+@@ -230,14 +236,14 @@ impl<'de, P: AsRef<Path>> Deserializer<'de> for FilesystemDeserializer<P> {
+         Err(Error::InvalidEnum(variant))
+     }
+ 
+-    fn deserialize_identifier<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where
++    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error> where
+         V: Visitor<'de> {
+-        Err(Error::Unsupported)
++        visitor.visit_str(&string_from_file(self.path)?)
+     }
+ 
+-    fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value, Self::Error> where
++    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error> where
+         V: Visitor<'de> {
+-        Err(Error::Unsupported)
++        visitor.visit_unit()
+     }
+ }
+ 
+@@ -657,6 +663,23 @@ mod tests {
+         assert_eq!(VariantNewType::deserialize(deserializer.clone()).unwrap(), VariantNewType::C(100));
+     }
+ 
++    #[derive(Serialize, Deserialize, Debug, PartialEq)]
++    #[serde(tag = "type", content = "content")]
++    enum VariantNewTypeTag {
++        C(u8),
++    }
++
++    #[test]
++    fn tuple_newtype_variant_tag() {
++        let tmp = TempDir::new("serde-fs").unwrap();
++        let serializer = FilesystemSerializer::new(tmp.path().join("var"));
++         let deserializer = FilesystemDeserializer {
++            path: tmp.path().join("var"),
++        };
++        VariantNewTypeTag::C(100).serialize(serializer.clone()).unwrap();
++        assert_eq!(VariantNewTypeTag::deserialize(deserializer.clone()).unwrap(), VariantNewTypeTag::C(100));
++    }
++
+     #[test]
+     fn seq() {
+         let tmp = TempDir::new("serde-fs").unwrap();
+@@ -840,5 +863,83 @@ mod tests {
+         assert_eq!(StructVariant::deserialize(deserializer.clone()).unwrap(), s);
+     }
+ 
++    #[derive(Serialize, Deserialize, Debug, PartialEq)]
++    #[serde(tag = "type", content = ".")]
++    enum StructVariantTagInternal {
++        V1 {
++            test: u8,
++            passed: u64,
++        }
++    }
++
++    #[test]
++    fn struct_variant_tag_internal() {
++        let tmp = TempDir::new("serde-fs").unwrap();
++        let serializer = FilesystemSerializer::new(tmp.path().join("struct"));
++        let deserializer = FilesystemDeserializer {
++            path: tmp.path().join("struct"),
++        };
++        let s = StructVariantTagInternal::V1 {
++            test: 100,
++            passed: 2100,
++        };
++        s.serialize(serializer.clone()).unwrap();
++        assert_eq!(StructVariantTagInternal::deserialize(deserializer.clone()).unwrap(), s);
++    }
++
++    // The test below is currently expected to fail as there
++    // is no known solution to the issue. The test above (with content set to ".")
++    // replicates the intended behaviour of this one and works. This one doesn't
++    // See issue e8310019-9017-4ce8-9397-800ca44300ce
++    #[derive(Serialize, Deserialize, Debug, PartialEq)]
++    #[serde(tag = "type")]
++    enum StructVariantTag {
++        V1 {
++            test: u8,
++            passed: u64,
++        }
++    }
++
++    #[test]
++    #[should_panic(expected = "invalid type")]
++    fn struct_variant_tag() {
++        let tmp = TempDir::new("serde-fs").unwrap();
++        let serializer = FilesystemSerializer::new(tmp.path().join("struct"));
++        let deserializer = FilesystemDeserializer {
++            path: tmp.path().join("struct"),
++        };
++        let s = StructVariantTag::V1 {
++            test: 100,
++            passed: 2100,
++        };
++        s.serialize(serializer.clone()).unwrap();
++        assert_eq!(StructVariantTag::deserialize(deserializer.clone()).unwrap(), s);
++    }
++
++
++
++    #[derive(Serialize, Deserialize, Debug, PartialEq)]
++    #[serde(tag = "type", content = "content")]
++    enum StructVariantTagContent {
++        V1 {
++            test: u8,
++            passed: u64,
++        }
++    }
++
++    #[test]
++    fn struct_variant_tag_content() {
++        let tmp = TempDir::new("serde-fs").unwrap();
++        let serializer = FilesystemSerializer::new(tmp.path().join("struct"));
++        let deserializer = FilesystemDeserializer {
++            path: tmp.path().join("struct"),
++        };
++        let s = StructVariantTagContent::V1 {
++            test: 100,
++            passed: 2100,
++        };
++        s.serialize(serializer.clone()).unwrap();
++        assert_eq!(StructVariantTagContent::deserialize(deserializer.clone()).unwrap(), s);
++    }
+ 
+ }
+\ No newline at end of file
+diff --git a/src/ser.rs b/src/ser.rs
+index c56df87..20fe633 100644
+--- a/src/ser.rs
++++ b/src/ser.rs
+@@ -705,6 +705,23 @@ mod tests {
+         assert_eq!(file_to_string(tmp.path().join("var").join("README.md")), "Hello!");
+     }
+ 
++    #[derive(Serialize)]
++    #[serde(tag = "type", content = "content")]
++    enum VariantNewTypeTag {
++        C(u8),
++    }
++
++    #[test]
++    fn tuple_newtype_variant_tag() {
++        let tmp = TempDir::new("serde-fs").unwrap();
++        let serializer = FilesystemSerializer {
++            path: tmp.path().join("var"),
++        };
++        VariantNewTypeTag::C(100).serialize(serializer.clone()).unwrap();
++        assert_eq!(file_to_string(tmp.path().join("var").join("type")), "C");
++        assert_eq!(file_to_string(tmp.path().join("var").join("content")), "100");
++    }
++
+     #[derive(Serialize)]
+     struct NewTypeStruct(u8);
+ 
+@@ -974,4 +991,53 @@ mod tests {
+         assert_eq!(file_to_string(tmp.path().join("struct").join("passed")), "2100");
+     }
+ 
++    #[derive(Serialize)]
++    #[serde(tag = "type")]
++    enum StructVariantTag {
++        V1 {
++            test: u8,
++            passed: u64,
++        }
++    }
++
++    #[test]
++    fn struct_variant_tag() {
++        let tmp = TempDir::new("serde-fs").unwrap();
++        let serializer = FilesystemSerializer {
++            path: tmp.path().join("struct"),
++        };
++        StructVariantTag::V1 {
++            test: 100,
++            passed: 2100,
++        }.serialize(serializer.clone()).unwrap();
++        assert_eq!(file_to_string(tmp.path().join("struct").join("type")), "V1");
++        assert_eq!(file_to_string(tmp.path().join("struct").join("test")), "100");
++        assert_eq!(file_to_string(tmp.path().join("struct").join("passed")), "2100");
++    }
++
++    #[derive(Serialize)]
++    #[serde(tag = "type", content = "content")]
++    enum StructVariantTagContent {
++        V1 {
++            test: u8,
++            passed: u64,
++        }
++    }
++
++    #[test]
++    fn struct_variant_tag_content() {
++        let tmp = TempDir::new("serde-fs").unwrap();
++        let serializer = FilesystemSerializer {
++            path: tmp.path().join("struct"),
++        };
++        StructVariantTagContent::V1 {
++            test: 100,
++            passed: 2100,
++        }.serialize(serializer.clone()).unwrap();
++        assert_eq!(file_to_string(tmp.path().join("struct").join("type")), "V1");
++        assert_eq!(file_to_string(tmp.path().join("struct").join("content").join("test")), "100");
++        assert_eq!(file_to_string(tmp.path().join("struct").join("content").join("passed")), "2100");
++    }
++
++
+ }
+\ No newline at end of file
+-- 
+2.15.0
+
