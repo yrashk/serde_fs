@@ -259,7 +259,7 @@ impl<'de, P: AsRef<Path>> de::SeqAccess<'de> for SeqAccess<P> {
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error> where
         T: de::DeserializeSeed<'de> {
         let path = self.path.as_ref().join(format!("{}", self.counter));
-        if path.is_file() {
+        if path.exists() {
             self.counter += 1;
             Ok(Some(seed.deserialize(FilesystemDeserializer::new(path))?))
         } else {
@@ -689,6 +689,38 @@ mod tests {
         };
         vec![100,200,300].serialize(serializer.clone()).unwrap();
         assert_eq!(Vec::<u16>::deserialize(deserializer.clone()).unwrap(), vec![100, 200, 300]);
+    }
+
+    #[test]
+    fn seq_complex_elem() {
+        #[derive(Debug, Deserialize, PartialEq, Serialize)]
+        struct Complex {
+            something: u32,
+            stuff: u32,
+        }
+
+        impl Complex {
+            fn new(x: u32) -> Complex {
+                Complex {
+                    something: x,
+                    stuff: x,
+                }
+            }
+        }
+
+        let tmp = TempDir::new("serde-fs").unwrap();
+        let serializer = FilesystemSerializer::new(tmp.path().join("seq-complex-elem"));
+        let deserializer = FilesystemDeserializer {
+            path: tmp.path().join("seq-complex-elem"),
+        };
+
+        let value = vec![
+            Complex::new(0),
+            Complex::new(1),
+            Complex::new(2),
+        ];
+        value.serialize(serializer.clone()).unwrap();
+        assert_eq!(Vec::<Complex>::deserialize(deserializer.clone()).unwrap(), value);
     }
 
     #[test]
