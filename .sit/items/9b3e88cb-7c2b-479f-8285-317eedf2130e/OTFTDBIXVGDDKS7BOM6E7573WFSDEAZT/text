@@ -1,0 +1,7 @@
+Sequences are currently deserialized by checking file existence at the
+target path, but complex elements could be folders.
+
+Solution: Change sequence deserialization to also check for folders, and
+allow the deserialization of the element type to fail instead if it's
+not the expected file structure.
+

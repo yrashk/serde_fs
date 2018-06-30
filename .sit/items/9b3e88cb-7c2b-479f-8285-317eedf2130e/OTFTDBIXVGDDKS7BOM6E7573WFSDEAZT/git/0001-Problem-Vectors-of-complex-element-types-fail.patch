@@ -1,0 +1,70 @@
+From 333d490f396f260718fbc408f438a9647ac16914 Mon Sep 17 00:00:00 2001
+From: Erich Gubler <erichdongubler@gmail.com>
+Date: Sat, 30 Jun 2018 07:36:07 -0600
+Subject: [PATCH] Problem: Vectors of complex element types fail
+
+Sequences are currently deserialized by checking file existence at the
+target path, but complex elements could be folders.
+
+Solution: Change sequence deserialization to also check for folders, and
+allow the deserialization of the element type to fail instead if it's
+not the expected file structure.
+---
+ src/de.rs | 34 +++++++++++++++++++++++++++++++++-
+ 1 file changed, 33 insertions(+), 1 deletion(-)
+
+diff --git a/src/de.rs b/src/de.rs
+index ed0933a..56c5e22 100644
+--- a/src/de.rs
++++ b/src/de.rs
+@@ -259,7 +259,7 @@ impl<'de, P: AsRef<Path>> de::SeqAccess<'de> for SeqAccess<P> {
+     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error> where
+         T: de::DeserializeSeed<'de> {
+         let path = self.path.as_ref().join(format!("{}", self.counter));
+-        if path.is_file() {
++        if path.exists() {
+             self.counter += 1;
+             Ok(Some(seed.deserialize(FilesystemDeserializer::new(path))?))
+         } else {
+@@ -691,6 +691,38 @@ mod tests {
+         assert_eq!(Vec::<u16>::deserialize(deserializer.clone()).unwrap(), vec![100, 200, 300]);
+     }
+ 
++    #[test]
++    fn seq_complex_elem() {
++        #[derive(Debug, Deserialize, PartialEq, Serialize)]
++        struct Complex {
++            something: u32,
++            stuff: u32,
++        }
++
++        impl Complex {
++            fn new(x: u32) -> Complex {
++                Complex {
++                    something: x,
++                    stuff: x,
++                }
++            }
++        }
++
++        let tmp = TempDir::new("serde-fs").unwrap();
++        let serializer = FilesystemSerializer::new(tmp.path().join("seq-complex-elem"));
++        let deserializer = FilesystemDeserializer {
++            path: tmp.path().join("seq-complex-elem"),
++        };
++
++        let value = vec![
++            Complex::new(0),
++            Complex::new(1),
++            Complex::new(2),
++        ];
++        value.serialize(serializer.clone()).unwrap();
++        assert_eq!(Vec::<Complex>::deserialize(deserializer.clone()).unwrap(), value);
++    }
++
+     #[test]
+     fn tuple() {
+         let tmp = TempDir::new("serde-fs").unwrap();
+-- 
+2.18.0
+
