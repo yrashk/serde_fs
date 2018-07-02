@@ -6,6 +6,7 @@ description = "[De]serializing data structures as files"
 license = "MIT/Apache-2.0"
 documentation = "https://docs.rs/serde_fs"
 repository = "https://github.com/yrashk/serde_fs"
+exclude = [ ".sit/**/**" ]
 
 [dependencies]
 serde = "1.0"
