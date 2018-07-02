@@ -55,7 +55,7 @@ be longer than one line.
 
 Once you have a branch (BRANCH) with your patch ready:
 
-Run `./scripts/prepare-merge-request <BRANCH>` script
+Run `sir mr <BRANCH>` script
 and either use the suggested text as is or edit it.
 Please keep in mind that currently it expects the first
 line of your commit to be a one-line problem statement
@@ -69,7 +69,7 @@ or a problem statement already recorded), simply
 extend the above command to this:
 
 ```
-./scripts/prepare-merge-requests <BRANCH> <ISSUE-ID>
+sit mr <BRANCH> <ISSUE-ID>
 ```
 
 Then, at the end, it will give you a command line
